@@ -35,114 +35,116 @@
  *   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-var RememberTheMilk = function(appKey, appSecret, permissions, format) {
-	this.authUrl = 'http://www.rememberthemilk.com/services/auth/';
-	this.baseUrl = 'http://api.rememberthemilk.com/services/rest/';
+var RememberTheMilk = function (appKey, appSecret, permissions, format) {
+    this.authUrl = 'https://www.rememberthemilk.com/services/auth/';
+    this.baseUrl = 'https://api.rememberthemilk.com/services/rest/';
 
-	var appKey = (appKey) ? appKey : '',
+    this.WinJS = (typeof WinJS !== 'undefined');
+
+    var appKey = (appKey) ? appKey : '',
 		appSecret = (appSecret) ? appSecret : '',
 		permissions = (permissions) ? permissions : 'read',
 		format = (format) ? format : 'json';
 
-	if (!appKey || !appSecret) {
-		throw 'Error: App Key and Secret Key must be defined.';
-	}
+    if (!appKey || !appSecret) {
+        throw 'Error: App Key and Secret Key must be defined.';
+    }
 
-	this.appKey = appKey;
-	this.appSecret = appSecret;
-	this.permissions = permissions;
-	this.format = format;
+    this.appKey = appKey;
+    this.appSecret = appSecret;
+    this.permissions = permissions;
+    this.format = format;
 
-	/**
+    /**
 	 * Encodes request parameters into URL format 
 	 * 
 	 * @param params    Array of parameters to be URL encoded
 	 * @param signed    Boolean specfying whether or not the URL should be signed
 	 * @return          Returns the URL encoded string of parameters
 	 */
-	this.encodeUrlParams = function(params, signed) {
-		var params = (params) ? params : {},
+    this.encodeUrlParams = function (params, signed) {
+        var params = (params) ? params : {},
 			signed = (signed) ? signed : false,
 			paramString = '',
 			count;
 
-		params.format = this.format;
-		params.api_key = this.appKey;
+        params.format = this.format;
+        params.api_key = this.appKey;
 
-		count = 0;
+        count = 0;
 
-		// Encode the parameter keys and values
-		for (key in params) {
-			if (count == 0) {
-				paramString += '?' + key + '=' + encodeURIComponent(params[key]);
-			} else {
-				paramString += '&' + key + '=' + encodeURIComponent(params[key]);
-			}
+        // Encode the parameter keys and values
+        for (key in params) {
+            if (count == 0) {
+                paramString += '?' + key + '=' + encodeURIComponent(params[key]);
+            } else {
+                paramString += '&' + key + '=' + encodeURIComponent(params[key]);
+            }
 
-			count++;
-		}
+            count++;
+        }
 
-		// Append an auth signature if needed
-		if (signed) {
-			paramString += this.generateSig(params);
-		}
+        // Append an auth signature if needed
+        if (signed) {
+            paramString += this.generateSig(params);
+        }
 
-		return paramString;
-	};
+        return paramString;
+    };
 
-	/**
+    /**
 	 * Generates a URL encoded authentication signature
 	 * 
 	 * @param params    The parameters used to generate the signature
 	 * @return          Returns the URL encoded authentication signature
 	 */
-	this.generateSig = function(params) {
-		var params = (params) ? params : {},
+    this.generateSig = function (params) {
+        var params = (params) ? params : {},
 			signature,
 			signatureUrl,
 			i,
 			k;
 
-		signature = '';
-		signatureUrl = '&api_sig=';
+        signature = '';
+        signatureUrl = '&api_sig=';
 
-		keys = Object.keys(params),
+        keys = Object.keys(params),
 		keys.sort();
 
-		for (i = 0; i < keys.length; i++) {
-			signature += keys[i] + params[keys[i]];
-		}
+        for (i = 0; i < keys.length; i++) {
+            signature += keys[i] + params[keys[i]];
+        }
 
-		signature = this.appSecret + signature;
-		signatureUrl += md5(signature);
+        signature = this.appSecret + signature;
+        signatureUrl += md5(signature);
 
-		return signatureUrl;
-	};
+        return signatureUrl;
+    };
 
-	/**
+    /**
 	 * Generates a RTM authentication URL
 	 * 
 	 * @param frob Optional frob for use in desktop applications
 	 * @return     Returns the reponse from the RTM API
 	 */
-	this.getAuthUrl = function(frob) {
-		var params, url;
+    this.getAuthUrl = function (frob) {
+        var params, url;
 
-		params = {
-			api_key: this.appKey,
-			perms: this.permissions
-		};
+        params = {
+            api_key: this.appKey,
+            perms: this.permissions
+        };
 
-		if (frob) {
-			params.frob = frob;
-		}
+        if (frob) {
+            params.frob = frob;
+        }
 
-		url = this.authUrl + this.encodeUrlParams(params, true);
+        url = this.authUrl + this.encodeUrlParams(params, true);
 
-		return url;
-	};
+        return url;
+    };
 
-	/**
+    /**
 	 * Main method for making API calls
 	 * 
 	 * @param method    Specifies what API method to be used
@@ -150,44 +152,54 @@ var RememberTheMilk = function(appKey, appSecret, permissions, format) {
 	 * @param callback  Callback to fire after the request comes back
 	 * @return          Returns the reponse from the RTM API
 	 */
-	this.get = function(method, params, callback) {
-		var method = (method) ? method : '',
+    this.get = function (method, params, callback) {
+        var method = (method) ? method : '',
 		    params = (params) ? params : {},
 		    callbackName,
 		    requestUrl,
 		    s;
 
-		if (!callback && typeof params == 'function') {
-			callback = params;
-			params = {};
-		}
+        if (!callback && typeof params == 'function') {
+            callback = params;
+            params = {};
+        }
 
-		if (!callback) {
-			callback = function(){};
-		}
+        if (!callback) {
+            callback = function () {};
+        }
 
-		if (!method) {
-			throw 'Error: API Method must be defined.';
-		}
+        if (!method) {
+            throw 'Error: API Method must be defined.';
+        }
 
-		params.method = method;
+        params.method = method;
 
-		callbackName = 'RememberTheMilk' + new Date().getTime();
-		params.callback = callbackName;
+        if (!this.WinJS) {
+            callbackName = 'RememberTheMilk' + new Date().getTime();
+            params.callback = callbackName;
+        }
 
-		if (this.auth_token) {
-			params.auth_token = this.auth_token;
-		}
+        if (this.auth_token) {
+            params.auth_token = this.auth_token;
+        }
 
-		requestUrl = this.baseUrl + this.encodeUrlParams(params, true);
+        requestUrl = this.baseUrl + this.encodeUrlParams(params, true);
 
-		window[callbackName] = function(resp){
-			callback.call(this, resp);
-			window[callbackName] = null;
-		}
+        if (!this.WinJS) {
+            window[callbackName] = function (resp) {
+                callback.call(this, resp);
+                window[callbackName] = null;
+            }
 
-		s = document.createElement('script');
-		s.src = requestUrl;
-		document.body.appendChild(s);
-	};
+            s = document.createElement('script');
+            s.src = requestUrl;
+            document.body.appendChild(s);
+        } else {
+            return WinJS.xhr({responseType: 'json', url: requestUrl}).done(
+                function completed(resp) {
+                    callback.call(this, JSON.parse(resp.responseText));
+                }
+            );
+        }
+    };
 }
