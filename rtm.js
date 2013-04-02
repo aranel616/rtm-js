@@ -5,7 +5,8 @@
  *   @since January 27th, 2013
  *   @see http://www.rememberthemilk.com/services/api/
  *
- *   Requires a global md5 function. I recommend this one:
+ *   Uses crypto module under node.js. Requires a global
+ *   md5 function on other platforms. I recommend this one:
  *   http://www.myersdaily.org/joseph/javascript/md5-text.html
  *
  *   Based on RTM PHP Library by Adam Magaña
@@ -34,172 +35,210 @@
  *   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  *   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+(function (root, factory) {
+	if (typeof exports === "object" && exports) {
+		module.exports = factory; // CommonJS
+	} else if (typeof define === "function" && define.amd) {
+		define(factory); // AMD
+	} else {
+		root.RememberTheMilk = factory; // <script>
+	}
+}(this, (function () {
+	var exports = function (appKey, appSecret, permissions, format) {
+		var https, crypt;
 
-var RememberTheMilk = function (appKey, appSecret, permissions, format) {
-    this.authUrl = 'https://www.rememberthemilk.com/services/auth/';
-    this.baseUrl = 'https://api.rememberthemilk.com/services/rest/';
+		this.authUrl = 'https://www.rememberthemilk.com/services/auth/';
+		this.baseUrl = 'https://api.rememberthemilk.com/services/rest/';
 
-    this.WinJS = (typeof WinJS !== 'undefined');
+		this.isWinJS = (typeof WinJS !== 'undefined');
+		this.isNode = (typeof module !== 'undefined' && module.exports);
 
-    var appKey = (appKey) ? appKey : '',
-		appSecret = (appSecret) ? appSecret : '',
-		permissions = (permissions) ? permissions : 'read',
-		format = (format) ? format : 'json';
+		if (this.isNode) {
+			https = require('https');
+			crypto = require('crypto');
+		}
 
-    if (!appKey || !appSecret) {
-        throw 'Error: App Key and Secret Key must be defined.';
-    }
+		this.md5 = (!this.isNode)
+			? md5
+			: function(string) {
+				return crypto.createHash('md5').update(string).digest("hex");
+			}
 
-    this.appKey = appKey;
-    this.appSecret = appSecret;
-    this.permissions = permissions;
-    this.format = format;
+		var appKey = (appKey) ? appKey : '',
+			appSecret = (appSecret) ? appSecret : '',
+			permissions = (permissions) ? permissions : 'read',
+			format = (format) ? format : 'json';
 
-    /**
-	 * Encodes request parameters into URL format 
-	 * 
-	 * @param params    Array of parameters to be URL encoded
-	 * @param signed    Boolean specfying whether or not the URL should be signed
-	 * @return          Returns the URL encoded string of parameters
-	 */
-    this.encodeUrlParams = function (params, signed) {
-        var params = (params) ? params : {},
-			signed = (signed) ? signed : false,
-			paramString = '',
-			count;
+		if (!appKey || !appSecret) {
+			throw 'Error: App Key and Secret Key must be defined.';
+		}
 
-        params.format = this.format;
-        params.api_key = this.appKey;
+		this.appKey = appKey;
+		this.appSecret = appSecret;
+		this.permissions = permissions;
+		this.format = format;
 
-        count = 0;
+		/**
+		 * Encodes request parameters into URL format 
+		 * 
+		 * @param params    Array of parameters to be URL encoded
+		 * @param signed    Boolean specfying whether or not the URL should be signed
+		 * @return          Returns the URL encoded string of parameters
+		 */
+		this.encodeUrlParams = function (params, signed) {
+			var params = (params) ? params : {},
+				signed = (signed) ? signed : false,
+				paramString = '',
+				count;
 
-        // Encode the parameter keys and values
-        for (key in params) {
-            if (count == 0) {
-                paramString += '?' + key + '=' + encodeURIComponent(params[key]);
-            } else {
-                paramString += '&' + key + '=' + encodeURIComponent(params[key]);
-            }
+			params.format = this.format;
+			params.api_key = this.appKey;
 
-            count++;
-        }
+			count = 0;
 
-        // Append an auth signature if needed
-        if (signed) {
-            paramString += this.generateSig(params);
-        }
+			// Encode the parameter keys and values
+			for (key in params) {
+				if (count == 0) {
+					paramString += '?' + key + '=' + encodeURIComponent(params[key]);
+				} else {
+					paramString += '&' + key + '=' + encodeURIComponent(params[key]);
+				}
 
-        return paramString;
-    };
+				count++;
+			}
 
-    /**
-	 * Generates a URL encoded authentication signature
-	 * 
-	 * @param params    The parameters used to generate the signature
-	 * @return          Returns the URL encoded authentication signature
-	 */
-    this.generateSig = function (params) {
-        var params = (params) ? params : {},
-			signature,
-			signatureUrl,
-			i,
-			k;
+			// Append an auth signature if needed
+			if (signed) {
+				paramString += this.generateSig(params);
+			}
 
-        signature = '';
-        signatureUrl = '&api_sig=';
+			return paramString;
+		};
 
-        keys = Object.keys(params),
-		keys.sort();
+		/**
+		 * Generates a URL encoded authentication signature
+		 * 
+		 * @param params    The parameters used to generate the signature
+		 * @return          Returns the URL encoded authentication signature
+		 */
+		this.generateSig = function (params) {
+			var params = (params) ? params : {},
+				signature,
+				signatureUrl,
+				i,
+				k;
 
-        for (i = 0; i < keys.length; i++) {
-            signature += keys[i] + params[keys[i]];
-        }
+			signature = '';
+			signatureUrl = '&api_sig=';
 
-        signature = this.appSecret + signature;
-        signatureUrl += md5(signature);
+			keys = Object.keys(params),
+			keys.sort();
 
-        return signatureUrl;
-    };
+			for (i = 0; i < keys.length; i++) {
+				signature += keys[i] + params[keys[i]];
+			}
 
-    /**
-	 * Generates a RTM authentication URL
-	 * 
-	 * @param frob Optional frob for use in desktop applications
-	 * @return     Returns the reponse from the RTM API
-	 */
-    this.getAuthUrl = function (frob) {
-        var params, url;
+			signature = this.appSecret + signature;
+			signatureUrl += this.md5(signature);
 
-        params = {
-            api_key: this.appKey,
-            perms: this.permissions
-        };
+			return signatureUrl;
+		};
 
-        if (frob) {
-            params.frob = frob;
-        }
+		/**
+		 * Generates a RTM authentication URL
+		 * 
+		 * @param frob Optional frob for use in desktop applications
+		 * @return     Returns the reponse from the RTM API
+		 */
+		this.getAuthUrl = function (frob) {
+			var params, url;
 
-        url = this.authUrl + this.encodeUrlParams(params, true);
+			params = {
+				api_key: this.appKey,
+				perms: this.permissions
+			};
 
-        return url;
-    };
+			if (frob) {
+				params.frob = frob;
+			}
 
-    /**
-	 * Main method for making API calls
-	 * 
-	 * @param method    Specifies what API method to be used
-	 * @param params    Array of API parameters to accompany the method parameter
-	 * @param callback  Callback to fire after the request comes back
-	 * @return          Returns the reponse from the RTM API
-	 */
-    this.get = function (method, params, callback) {
-        var method = (method) ? method : '',
-		    params = (params) ? params : {},
-		    callbackName,
-		    requestUrl,
-		    s;
+			url = this.authUrl + this.encodeUrlParams(params, true);
 
-        if (!callback && typeof params == 'function') {
-            callback = params;
-            params = {};
-        }
+			return url;
+		};
 
-        if (!callback) {
-            callback = function () {};
-        }
+		/**
+		 * Main method for making API calls
+		 * 
+		 * @param method    Specifies what API method to be used
+		 * @param params    Array of API parameters to accompany the method parameter
+		 * @param callback  Callback to fire after the request comes back
+		 * @return          Returns the reponse from the RTM API
+		 */
+		this.get = function (method, params, callback) {
+			var method = (method) ? method : '',
+				params = (params) ? params : {},
+				callbackName,
+				requestUrl,
+				s;
 
-        if (!method) {
-            throw 'Error: API Method must be defined.';
-        }
+			if (!callback && typeof params == 'function') {
+				callback = params;
+				params = {};
+			}
 
-        params.method = method;
+			if (!callback) {
+				callback = function () {};
+			}
 
-        if (!this.WinJS) {
-            callbackName = 'RememberTheMilk' + new Date().getTime();
-            params.callback = callbackName;
-        }
+			if (!method) {
+				throw 'Error: API Method must be defined.';
+			}
 
-        if (this.auth_token) {
-            params.auth_token = this.auth_token;
-        }
+			params.method = method;
 
-        requestUrl = this.baseUrl + this.encodeUrlParams(params, true);
+			if (!this.isWinJS && !this.isNode) {
+				callbackName = 'RememberTheMilk' + new Date().getTime();
+				params.callback = callbackName;
+			}
 
-        if (!this.WinJS) {
-            window[callbackName] = function (resp) {
-                callback.call(this, resp);
-                window[callbackName] = null;
-            }
+			if (this.auth_token) {
+				params.auth_token = this.auth_token;
+			}
 
-            s = document.createElement('script');
-            s.src = requestUrl;
-            document.body.appendChild(s);
-        } else {
-            return WinJS.xhr({responseType: 'json', url: requestUrl}).done(
-                function completed(resp) {
-                    callback.call(this, JSON.parse(resp.responseText));
-                }
-            );
-        }
-    };
-}
+			requestUrl = this.baseUrl + this.encodeUrlParams(params, true);
+
+			if (this.isWinJS) {
+				return WinJS.xhr({responseType: 'json', url: requestUrl}).done(
+					function completed(resp) {
+						callback.call(this, JSON.parse(resp.responseText));
+					}
+				);
+			} else if (this.isNode) {
+				https.get(requestUrl, function(response){
+					var resp = '';
+
+					response.on('data', function (chunk) {
+						resp += chunk;
+					});
+
+					response.on('end', function () {
+						resp = JSON.parse(resp);
+						callback.call(this, resp)
+					});
+				}).end();
+			} else {
+				window[callbackName] = function (resp) {
+					callback.call(this, resp);
+					window[callbackName] = null;
+				}
+
+				s = document.createElement('script');
+				s.src = requestUrl;
+				document.body.appendChild(s);
+			}
+		};
+	}
+
+	return exports;
+}())));
