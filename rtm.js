@@ -61,7 +61,7 @@
 		this.md5 = (!this.isNode)
 			? md5
 			: function(string) {
-				return crypto.createHash('md5').update(string).digest("hex");
+				return crypto.createHash('md5').update(string, 'utf8').digest("hex");
 			}
 
 		var appKey = (appKey) ? appKey : '',
