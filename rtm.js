@@ -52,6 +52,7 @@
 
 		this.isWinJS = (typeof WinJS !== 'undefined');
 		this.isNode = (typeof module !== 'undefined' && module.exports);
+		this.isFirefoxOS = (typeof MozActivity !== 'undefined'); //Best way to do it right now (also working on Fifrefox for Android, and temporary as everything is built to eventually be a standard)
 
 		if (this.isNode) {
 			https = require('https');
@@ -197,7 +198,7 @@
 
 			params.method = method;
 
-			if (!this.isWinJS && !this.isNode) {
+			if (!this.isWinJS && !this.isNode && !this.isFirefoxOS) {
 				callbackName = 'RememberTheMilk' + new Date().getTime();
 				params.callback = callbackName;
 			}
@@ -227,6 +228,21 @@
 						callback.call(this, resp)
 					});
 				}).end();
+			} else if (this.isFirefoxOS) {
+				var xhr = new XMLHttpRequest({mozSystem: true});
+				xhr.open("POST", requestUrl, true);
+
+            	xhr.onreadystatechange = function () {
+	                if (xhr.status === 200 && xhr.readyState === 4) {
+	                    callback.call(this, JSON.parse(xhr.response));
+	                }
+	            };
+
+	            xhr.onerror = function () {
+	                console.log("XHR error");
+            	};
+
+				xhr.send();
 			} else {
 				window[callbackName] = function (resp) {
 					callback.call(this, resp);
