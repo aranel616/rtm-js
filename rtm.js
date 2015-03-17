@@ -9,7 +9,7 @@
  *   md5 function on other platforms. I recommend this one:
  *   http://www.myersdaily.org/joseph/javascript/md5-text.html
  *
- *   Based on RTM PHP Library by Adam Magaña
+ *   Based on RTM PHP Library by Adam MagaÃ±a
  *   @see https://github.com/adammagana/rtm-php-library
  *
  *   License (The MIT License)
@@ -45,25 +45,28 @@
 	}
 }(this, (function () {
 	var exports = function (appKey, appSecret, permissions, format) {
-		var https, crypt;
+		var https, crypto, ajax;
 
 		this.authUrl = 'https://www.rememberthemilk.com/services/auth/';
 		this.baseUrl = 'https://api.rememberthemilk.com/services/rest/';
 
+		this.isPebble = (typeof Pebble !== 'undefined');
 		this.isWinJS = (typeof WinJS !== 'undefined');
-		this.isNode = (typeof module !== 'undefined' && module.exports);
+		this.isNode = (!this.isPebble && typeof module !== 'undefined' && module.exports);
 		this.isFirefoxOS = (typeof MozActivity !== 'undefined'); //Best way to do it right now (also working on Fifrefox for Android, and temporary as everything is built to eventually be a standard)
 
 		if (this.isNode) {
 			https = require('https');
 			crypto = require('crypto');
-		}
-
-		this.md5 = (!this.isNode)
-			? md5
-			: function(string) {
+			this.md5 = function(string) {
 				return crypto.createHash('md5').update(string, 'utf8').digest("hex");
-			}
+			};
+		} else if (this.isPebble) {
+			this.md5 = require('md5');
+			ajax = require('ajax');
+		} else {
+			this.md5 = md5;
+		}
 
 		var appKey = (appKey) ? appKey : '',
 			appSecret = (appSecret) ? appSecret : '',
@@ -98,8 +101,8 @@
 			count = 0;
 
 			// Encode the parameter keys and values
-			for (key in params) {
-				if (count == 0) {
+			for (var key in params) {
+				if (count === 0) {
 					paramString += '?' + key + '=' + encodeURIComponent(params[key]);
 				} else {
 					paramString += '&' + key + '=' + encodeURIComponent(params[key]);
@@ -127,12 +130,12 @@
 				signature,
 				signatureUrl,
 				i,
-				k;
+				keys;
 
 			signature = '';
 			signatureUrl = '&api_sig=';
 
-			keys = Object.keys(params),
+			keys = Object.keys(params);
 			keys.sort();
 
 			for (i = 0; i < keys.length; i++) {
@@ -198,7 +201,7 @@
 
 			params.method = method;
 
-			if (!this.isWinJS && !this.isNode && !this.isFirefoxOS) {
+			if (!this.isPebble && !this.isWinJS && !this.isNode && !this.isFirefoxOS) {
 				callbackName = 'RememberTheMilk' + new Date().getTime();
 				params.callback = callbackName;
 			}
@@ -208,8 +211,16 @@
 			}
 
 			requestUrl = this.baseUrl + this.encodeUrlParams(params, true);
-
-			if (this.isWinJS) {
+			
+			if (this.isPebble) {
+				ajax({url: requestUrl, type: 'json'}, 
+					function completed(data, status, request) {
+						callback.call(this, data);
+					},
+					function failure(error, status, request) {
+						console.log("AJAX Error: "+error);
+					});
+			} else if (this.isWinJS) {
 				return WinJS.xhr({responseType: 'json', url: requestUrl}).done(
 					function completed(resp) {
 						callback.call(this, JSON.parse(resp.responseText));
@@ -225,7 +236,7 @@
 
 					response.on('end', function () {
 						resp = JSON.parse(resp);
-						callback.call(this, resp)
+						callback.call(this, resp);
 					});
 				}).end();
 			} else if (this.isFirefoxOS) {
@@ -247,7 +258,7 @@
 				window[callbackName] = function (resp) {
 					callback.call(this, resp);
 					window[callbackName] = null;
-				}
+				};
 
 				s = document.createElement('script');
 				s.src = requestUrl;
