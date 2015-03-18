@@ -9,7 +9,7 @@
  *   md5 function on other platforms. I recommend this one:
  *   http://www.myersdaily.org/joseph/javascript/md5-text.html
  *
- *   Based on RTM PHP Library by Adam Magaña
+ *   Based on RTM PHP Library by Adam MagaÃ±a
  *   @see https://github.com/adammagana/rtm-php-library
  *
  *   License (The MIT License)
@@ -45,7 +45,7 @@
 	}
 }(this, (function () {
 	var exports = function (appKey, appSecret, permissions, format) {
-		var https, crypt;
+		var https, crypto;
 
 		this.authUrl = 'https://www.rememberthemilk.com/services/auth/';
 		this.baseUrl = 'https://api.rememberthemilk.com/services/rest/';
