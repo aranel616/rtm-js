@@ -1,0 +1,28 @@
+{
+  "name": "rtm-js",
+  "version": "1.0.0",
+  "description": "rtm-js is a javascript library for the Remember the Milk API.",
+  "main": "rtm.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/michaelday/rtm-js.git"
+  },
+  "keywords": [
+    "rtm",
+    "remember",
+    "the",
+    "milk"
+  ],
+  "author": "Michael Day",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/michaelday/rtm-js/issues"
+  },
+  "homepage": "https://github.com/michaelday/rtm-js#readme"
+}
