@@ -5,7 +5,15 @@ rtm-js is a javascript library for the Remember the Milk API.
 
 rtm.js works out of the box in the browser, Node.js, Firefox OS, WinJS, and Pebble.js.
 
-####Usage: 
+#### Installing:
+
+On Node.js, you can grab it with npm:
+
+```sh
+npm install --save-dev rtm-js
+```
+
+#### Usage: 
 
 rtm.js can be included either AMD style or CommonJS style. If neither of those are an option, rtm.js will expose window.RememberTheMilk.
 
@@ -41,6 +49,6 @@ rtm.get('rtm.tasks.getList', {list_id: listId, filter: 'status:incomplete'}, fun
 
 Check out the examples to get started. There's one for node, and one for the browser. You can find them in the examples directory.
 
-####Contributing:
+#### Contributing:
 
 Contributions are welcome. Without contributions, this package would be buggy in Node.js, and wouldn't work at all in platforms like Firefox OS or Pebble.js. So feel free to fork this repository and send a pull request!
