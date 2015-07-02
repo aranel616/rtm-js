@@ -1,6 +1,6 @@
 {
   "name": "rtm-js",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "rtm-js is a javascript library for the Remember the Milk API.",
   "main": "rtm.js",
   "directories": {
