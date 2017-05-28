@@ -89,13 +89,16 @@
 		 * @param signed    Boolean specfying whether or not the URL should be signed
 		 * @return          Returns the URL encoded string of parameters
 		 */
-		this.encodeUrlParams = function (params, signed) {
+		this.encodeUrlParams = function (params, signed, excludeFormat) {
 			var params = (params) ? params : {},
 				signed = (signed) ? signed : false,
+				excludeFormat = (excludeFormat) ? excludeFormat : false,
 				paramString = '',
 				count;
 
-			params.format = this.format;
+			if(!excludeFormat){
+				params.format = this.format;
+			}
 			params.api_key = this.appKey;
 
 			count = 0;
@@ -166,7 +169,7 @@
 				params.frob = frob;
 			}
 
-			url = this.authUrl + this.encodeUrlParams(params, true);
+			url = this.authUrl + this.encodeUrlParams(params, true, true);
 
 			return url;
 		};
